@@ -18,7 +18,7 @@ const tablesToClear = [
   { name: "eventos", label: "eventos" },
   { name: "programacao_semanal", label: "programação semanal" },
   { name: "avisos", label: "avisos" },
-  { name: "conteudos_site", label: "conteúdos do site" },
+  { name: "conteudos_site", label: "conteúdos do site", key: "chave" },
   { name: "metodos_contribuicao", label: "métodos de contribuição" },
   { name: "ministerios", label: "ministérios" },
   { name: "departamentos", label: "departamentos" },
