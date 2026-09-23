@@ -1309,13 +1309,13 @@ Uma funcionalidade só deve ser considerada concluída quando:
 
 ### Fase 8 --- Produção
 
--   [ ] Variáveis Vercel.
--   [ ] Supabase produção.
+-   [x] Variáveis Vercel.
+-   [x] Supabase produção.
 -   [ ] Domínio.
 -   [x] Build de produção.
 -   [x] Testes finais.
 -   [x] Observabilidade/logs apropriados.
--   [ ] Deploy.
+-   [x] Deploy.
 
 ------------------------------------------------------------------------
 
