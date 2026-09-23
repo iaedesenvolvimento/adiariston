@@ -110,12 +110,30 @@ export interface AdminSetting {
 export interface AdminWeeklySchedule {
   id: string;
   titulo: string;
+  categoria: string;
   dia_semana: number;
   horario: string;
+  horario_fim: string | null;
   local: string | null;
   descricao: string | null;
+  ministerio_id: string | null;
+  data_inicio: string;
+  data_fim: string | null;
   publico: boolean;
   ativo: boolean;
+  ordem: number;
+}
+
+export interface AdminScheduleException {
+  id: string;
+  programacao_id: string;
+  data: string;
+  status: "NORMAL" | "ALTERADA" | "CANCELADA";
+  titulo: string | null;
+  horario: string | null;
+  horario_fim: string | null;
+  local: string | null;
+  descricao: string | null;
 }
 
 export interface AdminAnnouncement {

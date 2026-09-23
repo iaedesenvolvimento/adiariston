@@ -3,6 +3,7 @@ import type {
   AdminChurchData,
   AdminContributionMethod,
   AdminEvent,
+  AdminScheduleException,
   AdminTransmission,
   AdminWeeklySchedule,
 } from "@/types/admin";
@@ -22,6 +23,9 @@ export interface PublicEventListItem {
   title: string;
   time: string;
   location: string;
+  href?: string;
+  startsAt: string;
+  source: "evento" | "programacao";
 }
 
 export interface PublicEventDetail extends PublicEventListItem {
@@ -79,8 +83,22 @@ const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
+const publicEventsRangeDays = 45;
+
 function firstRelation<T>(value: T | T[] | null) {
   return Array.isArray(value) ? value[0] ?? null : value;
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(date: string) {
+  return new Date(`${date}T12:00:00`);
 }
 
 function mapPublicEvent(event: AdminEvent): PublicEventDetail {
@@ -100,6 +118,9 @@ function mapPublicEvent(event: AdminEvent): PublicEventDetail {
       minute: "2-digit",
     }),
     location: event.local || "Local a definir",
+    href: `/agenda/${event.id}`,
+    startsAt: event.inicio_em,
+    source: "evento",
     category: category?.nome || "Evento",
     summary:
       event.descricao ||
@@ -108,6 +129,95 @@ function mapPublicEvent(event: AdminEvent): PublicEventDetail {
       event.descricao ||
       "Mais detalhes serão informados pela equipe da igreja.",
   };
+}
+
+function mapScheduleOccurrence(
+  schedule: AdminWeeklySchedule,
+  date: Date,
+  exception: AdminScheduleException | undefined
+): PublicEventDetail | null {
+  if (exception?.status === "CANCELADA") {
+    return null;
+  }
+
+  const dateKey = toDateInputValue(date);
+  const time = exception?.horario || schedule.horario;
+  const title = exception?.titulo || schedule.titulo;
+  const location =
+    exception?.local || schedule.local || "Local a definir";
+  const description =
+    exception?.descricao ||
+    schedule.descricao ||
+    "Uma programação pública da comunidade.";
+
+  return {
+    id: `programacao-${schedule.id}-${dateKey}`,
+    day: String(date.getDate()).padStart(2, "0"),
+    month: monthFormatter
+      .format(date)
+      .replace(".", "")
+      .toUpperCase(),
+    title,
+    time: time.slice(0, 5),
+    location,
+    href: "/agenda",
+    startsAt: `${dateKey}T${time}`,
+    source: "programacao",
+    category: schedule.categoria || "Programação",
+    summary: description,
+    description,
+  };
+}
+
+function buildScheduleOccurrences(
+  schedules: AdminWeeklySchedule[],
+  exceptions: AdminScheduleException[]
+) {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  const exceptionMap = new Map<string, AdminScheduleException>();
+  exceptions.forEach((exception) => {
+    exceptionMap.set(
+      `${exception.programacao_id}:${exception.data}`,
+      exception
+    );
+  });
+
+  const occurrences: PublicEventDetail[] = [];
+
+  for (let offset = 0; offset < publicEventsRangeDays; offset += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    const dateKey = toDateInputValue(date);
+
+    schedules.forEach((schedule) => {
+      if (schedule.dia_semana !== date.getDay()) {
+        return;
+      }
+
+      if (schedule.data_inicio && dateKey < schedule.data_inicio) {
+        return;
+      }
+
+      if (schedule.data_fim && dateKey > schedule.data_fim) {
+        return;
+      }
+
+      const exception = exceptionMap.get(`${schedule.id}:${dateKey}`);
+      const occurrence = mapScheduleOccurrence(
+        schedule,
+        date,
+        exception
+      );
+
+      if (occurrence) {
+        occurrences.push(occurrence);
+      }
+    });
+  }
+
+  return occurrences;
 }
 
 function mapPublicTransmission(
@@ -144,23 +254,78 @@ function isVisiblePublicTransmission(
 export async function listPublicEvents() {
   try {
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("eventos")
-      .select(
-        "id,categoria_id,titulo,descricao,inicio_em,fim_em,local,status,publicado_em,categorias_evento(nome)"
-      )
-      .eq("status", "PUBLICADO")
-      .gte("inicio_em", new Date().toISOString())
-      .order("inicio_em", { ascending: true });
+    const today = new Date();
+    const rangeEnd = new Date(today);
+    rangeEnd.setDate(today.getDate() + publicEventsRangeDays);
+    const todayKey = toDateInputValue(today);
+    const rangeEndKey = toDateInputValue(rangeEnd);
 
-    if (error) {
+    const [eventsResult, schedulesResult, exceptionsResult] =
+      await Promise.all([
+        supabase
+          .from("eventos")
+          .select(
+            "id,categoria_id,titulo,descricao,inicio_em,fim_em,local,status,publicado_em,categorias_evento(nome)"
+          )
+          .eq("status", "PUBLICADO")
+          .gte("inicio_em", today.toISOString())
+          .order("inicio_em", { ascending: true }),
+        supabase
+          .from("programacao_semanal")
+          .select(
+            "id,titulo,categoria,dia_semana,horario,horario_fim,local,descricao,ministerio_id,data_inicio,data_fim,publico,ativo,ordem"
+          )
+          .eq("publico", true)
+          .eq("ativo", true)
+          .order("ordem")
+          .order("dia_semana")
+          .order("horario"),
+        supabase
+          .from("excecoes_programacao")
+          .select(
+            "id,programacao_id,data,status,titulo,horario,horario_fim,local,descricao"
+          )
+          .gte("data", todayKey)
+          .lte("data", rangeEndKey),
+      ]);
+
+    if (eventsResult.error) {
       console.warn("[public-data] Eventos públicos indisponíveis.", {
-        errorCode: error.code,
+        errorCode: eventsResult.error.code,
       });
-      return [];
     }
 
-    return ((data ?? []) as AdminEvent[]).map(mapPublicEvent);
+    if (schedulesResult.error) {
+      console.warn("[public-data] Programação pública indisponível.", {
+        errorCode: schedulesResult.error.code,
+      });
+    }
+
+    if (exceptionsResult.error) {
+      console.warn("[public-data] Exceções da programação indisponíveis.", {
+        errorCode: exceptionsResult.error.code,
+      });
+    }
+
+    const events = eventsResult.error
+      ? []
+      : ((eventsResult.data ?? []) as AdminEvent[]).map(mapPublicEvent);
+
+    const scheduleOccurrences = schedulesResult.error
+      ? []
+      : buildScheduleOccurrences(
+          (schedulesResult.data ?? []) as AdminWeeklySchedule[],
+          exceptionsResult.error
+            ? []
+            : ((exceptionsResult.data ?? []) as AdminScheduleException[])
+        );
+
+    return [...events, ...scheduleOccurrences].sort(
+      (first, second) =>
+        parseLocalDate(first.startsAt.slice(0, 10)).getTime() -
+          parseLocalDate(second.startsAt.slice(0, 10)).getTime() ||
+        first.time.localeCompare(second.time)
+    );
   } catch (error) {
     console.warn("[public-data] Eventos públicos indisponíveis.", {
       errorName:
@@ -203,10 +368,11 @@ export async function getPublicChurchInfo(): Promise<PublicChurchInfo> {
       supabase
         .from("programacao_semanal")
         .select(
-          "id,titulo,dia_semana,horario,local,descricao,publico,ativo"
+          "id,titulo,categoria,dia_semana,horario,horario_fim,local,descricao,ministerio_id,data_inicio,data_fim,publico,ativo,ordem"
         )
         .eq("publico", true)
         .eq("ativo", true)
+        .order("ordem")
         .order("dia_semana")
         .order("horario")
         .limit(1),

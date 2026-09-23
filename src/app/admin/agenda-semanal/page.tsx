@@ -1,10 +1,15 @@
 import { AdminHeader } from "@/components/layout/AdminHeader";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { listAdminWeeklySchedule } from "@/services/adminData";
+import {
+  listAdminMinistries,
+  listAdminScheduleExceptions,
+  listAdminWeeklySchedule,
+} from "@/services/adminData";
 import { requireAdminProfile } from "@/services/auth";
 import {
   createWeeklyScheduleAction,
   updateWeeklyScheduleAction,
+  upsertScheduleExceptionAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +24,39 @@ const weekDays = [
   "Sábado",
 ];
 
+const categories = [
+  "Culto",
+  "Oração",
+  "Ensaio",
+  "Jovens",
+  "Crianças",
+  "Reunião",
+  "Curso",
+  "Comunidade",
+];
+
+const statusLabels = {
+  NORMAL: "Normal",
+  ALTERADA: "Alterada",
+  CANCELADA: "Cancelada",
+};
+
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default async function AdminWeeklySchedulePage() {
   const admin = await requireAdminProfile([
     "Admin",
     "Leadership",
     "Editor",
   ]);
-  const schedules = await listAdminWeeklySchedule();
+  const [schedules, exceptions, ministries] = await Promise.all([
+    listAdminWeeklySchedule(),
+    listAdminScheduleExceptions(),
+    listAdminMinistries(),
+  ]);
+  const today = todayInputValue();
 
   return (
     <>
@@ -61,6 +92,21 @@ export default async function AdminWeeklySchedulePage() {
               </label>
 
               <label className="block text-sm font-semibold text-text-primary">
+                Categoria
+                <select
+                  name="categoria"
+                  defaultValue="Culto"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
                 Dia
                 <select
                   name="diaSemana"
@@ -86,13 +132,69 @@ export default async function AdminWeeklySchedulePage() {
               </label>
             </div>
 
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <div className="mt-5 grid gap-5 md:grid-cols-4">
+              <label className="block text-sm font-semibold text-text-primary">
+                Horário final
+                <input
+                  name="horarioFim"
+                  type="time"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Início da recorrência
+                <input
+                  name="dataInicio"
+                  type="date"
+                  required
+                  defaultValue={today}
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Fim da recorrência
+                <input
+                  name="dataFim"
+                  type="date"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Ordem
+                <input
+                  name="ordem"
+                  type="number"
+                  defaultValue="0"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-3">
               <label className="block text-sm font-semibold text-text-primary">
                 Local
                 <input
                   name="local"
                   className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
                 />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Ministério responsável
+                <select
+                  name="ministerioId"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                >
+                  <option value="">Nenhum</option>
+                  {ministries.map((ministry) => (
+                    <option key={ministry.id} value={ministry.id}>
+                      {ministry.nome}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="block text-sm font-semibold text-text-primary">
@@ -129,6 +231,112 @@ export default async function AdminWeeklySchedulePage() {
             <div className="mt-6">
               <SubmitButton pendingLabel="Cadastrando...">
                 Cadastrar programação
+              </SubmitButton>
+            </div>
+          </form>
+
+          <form
+            action={upsertScheduleExceptionAction}
+            className="mt-8 rounded-xl border border-border-default bg-surface p-6 shadow-sm"
+          >
+            <h2 className="text-xl font-bold text-primary-900">
+              Alterar uma data específica
+            </h2>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-4">
+              <label className="block text-sm font-semibold text-text-primary md:col-span-2">
+                Programação
+                <select
+                  name="programacaoId"
+                  required
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                >
+                  <option value="">Selecione</option>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.id} value={schedule.id}>
+                      {schedule.titulo} - {weekDays[schedule.dia_semana]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Data
+                <input
+                  name="data"
+                  type="date"
+                  required
+                  defaultValue={today}
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Status
+                <select
+                  name="status"
+                  defaultValue="ALTERADA"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                >
+                  <option value="ALTERADA">Alterada</option>
+                  <option value="CANCELADA">Cancelada</option>
+                  <option value="NORMAL">Normal</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-3">
+              <label className="block text-sm font-semibold text-text-primary">
+                Novo título
+                <input
+                  name="titulo"
+                  placeholder="Opcional"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Novo horário
+                <input
+                  name="horario"
+                  type="time"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Novo horário final
+                <input
+                  name="horarioFim"
+                  type="time"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <label className="block text-sm font-semibold text-text-primary">
+                Novo local
+                <input
+                  name="local"
+                  placeholder="Opcional"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-text-primary">
+                Observação
+                <input
+                  name="descricao"
+                  placeholder="Opcional"
+                  className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6">
+              <SubmitButton pendingLabel="Salvando...">
+                Salvar alteração pontual
               </SubmitButton>
             </div>
           </form>
@@ -175,6 +383,21 @@ export default async function AdminWeeklySchedulePage() {
                   </label>
 
                   <label className="block text-sm font-semibold text-text-primary">
+                    Categoria
+                    <select
+                      name="categoria"
+                      defaultValue={schedule.categoria}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-semibold text-text-primary">
                     Horário
                     <input
                       name="horario"
@@ -186,14 +409,75 @@ export default async function AdminWeeklySchedulePage() {
                   </label>
                 </div>
 
-                <label className="mt-4 block text-sm font-semibold text-text-primary">
-                  Local
-                  <input
-                    name="local"
-                    defaultValue={schedule.local ?? ""}
-                    className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
-                  />
-                </label>
+                <div className="mt-4 grid gap-4 md:grid-cols-4">
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Horário final
+                    <input
+                      name="horarioFim"
+                      type="time"
+                      defaultValue={schedule.horario_fim?.slice(0, 5) ?? ""}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Início
+                    <input
+                      name="dataInicio"
+                      type="date"
+                      required
+                      defaultValue={schedule.data_inicio}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Fim
+                    <input
+                      name="dataFim"
+                      type="date"
+                      defaultValue={schedule.data_fim ?? ""}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Ordem
+                    <input
+                      name="ordem"
+                      type="number"
+                      defaultValue={schedule.ordem}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Local
+                    <input
+                      name="local"
+                      defaultValue={schedule.local ?? ""}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-text-primary">
+                    Ministério responsável
+                    <select
+                      name="ministerioId"
+                      defaultValue={schedule.ministerio_id ?? ""}
+                      className="mt-2 w-full rounded-md border border-border-default px-4 py-3 outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    >
+                      <option value="">Nenhum</option>
+                      {ministries.map((ministry) => (
+                        <option key={ministry.id} value={ministry.id}>
+                          {ministry.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
                 <label className="mt-4 block text-sm font-semibold text-text-primary">
                   Descrição
@@ -234,6 +518,57 @@ export default async function AdminWeeklySchedulePage() {
               </form>
             ))}
           </div>
+
+          {exceptions.length > 0 ? (
+            <section className="mt-10 rounded-xl border border-border-default bg-surface p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-primary-900">
+                Exceções cadastradas
+              </h2>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {exceptions.map((exception) => {
+                  const schedule = schedules.find(
+                    (item) => item.id === exception.programacao_id
+                  );
+
+                  return (
+                    <div
+                      key={exception.id}
+                      className="rounded-lg border border-border-default p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-primary-900">
+                            {exception.titulo ||
+                              schedule?.titulo ||
+                              "Programação"}
+                          </p>
+                          <p className="mt-1 text-sm text-text-secondary">
+                            {new Date(
+                              `${exception.data}T00:00:00`
+                            ).toLocaleDateString("pt-BR")}
+                            {exception.horario
+                              ? ` às ${exception.horario.slice(0, 5)}`
+                              : ""}
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-700">
+                          {statusLabels[exception.status]}
+                        </span>
+                      </div>
+
+                      {exception.local ? (
+                        <p className="mt-3 text-sm text-text-secondary">
+                          {exception.local}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
         </div>
       </main>
     </>

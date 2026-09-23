@@ -1957,12 +1957,12 @@ Alterações administrativas de agenda, transmissões, dados da igreja, avisos o
 ## Checklist adicional
 
 ### Agenda semanal
-- [ ] Criar `programacao_semanal`.
-- [ ] Criar `excecoes_programacao`.
-- [ ] Implementar cultos, ensaios e outras atividades recorrentes.
-- [ ] Implementar alteração/cancelamento de ocorrência específica.
-- [ ] Criar `/admin/agenda-semanal`.
-- [ ] Integrar programação à Home e `/agenda`.
+- [x] Criar `programacao_semanal`.
+- [x] Criar `excecoes_programacao`.
+- [x] Implementar cultos, ensaios e outras atividades recorrentes.
+- [x] Implementar alteração/cancelamento de ocorrência específica.
+- [x] Criar `/admin/agenda-semanal`.
+- [x] Integrar programação à Home e `/agenda`.
 
 ### Lives
 - [x] Criar `transmissoes`.

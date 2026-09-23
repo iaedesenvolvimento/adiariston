@@ -18,19 +18,55 @@ function normalizeSchedulePayload(formData: FormData) {
   const title = getString(formData, "titulo");
   const day = Number(getString(formData, "diaSemana"));
   const time = getString(formData, "horario");
+  const startDate = getString(formData, "dataInicio");
 
-  if (!title || Number.isNaN(day) || !time) {
-    throw new Error("Título, dia e horário são obrigatórios.");
+  if (!title || Number.isNaN(day) || !time || !startDate) {
+    throw new Error(
+      "Título, dia, horário e início da recorrência são obrigatórios."
+    );
   }
 
   return {
     titulo: title,
+    categoria: getString(formData, "categoria") || "Culto",
     dia_semana: day,
     horario: time,
+    horario_fim: getString(formData, "horarioFim") || null,
     local: getString(formData, "local") || null,
     descricao: getString(formData, "descricao") || null,
+    ministerio_id: getString(formData, "ministerioId") || null,
+    data_inicio: startDate,
+    data_fim: getString(formData, "dataFim") || null,
     publico: getBoolean(formData, "publico"),
     ativo: getBoolean(formData, "ativo"),
+    ordem: Number(getString(formData, "ordem")) || 0,
+  };
+}
+
+function normalizeExceptionPayload(
+  formData: FormData,
+  adminId: string
+) {
+  const scheduleId = getString(formData, "programacaoId");
+  const date = getString(formData, "data");
+  const status = getString(formData, "status") || "ALTERADA";
+
+  if (!scheduleId || !date) {
+    throw new Error("Programação e data da exceção são obrigatórias.");
+  }
+
+  return {
+    programacao_id: scheduleId,
+    data: date,
+    status: ["NORMAL", "ALTERADA", "CANCELADA"].includes(status)
+      ? status
+      : "ALTERADA",
+    titulo: getString(formData, "titulo") || null,
+    horario: getString(formData, "horario") || null,
+    horario_fim: getString(formData, "horarioFim") || null,
+    local: getString(formData, "local") || null,
+    descricao: getString(formData, "descricao") || null,
+    updated_by: adminId,
   };
 }
 
@@ -57,6 +93,8 @@ export async function createWeeklyScheduleAction(
   });
 
   revalidatePath("/admin/agenda-semanal");
+  revalidatePath("/agenda");
+  revalidatePath("/");
 }
 
 export async function updateWeeklyScheduleAction(
@@ -90,4 +128,35 @@ export async function updateWeeklyScheduleAction(
   });
 
   revalidatePath("/admin/agenda-semanal");
+  revalidatePath("/agenda");
+  revalidatePath("/");
+}
+
+export async function upsertScheduleExceptionAction(
+  formData: FormData
+) {
+  const admin = await requireAdminProfile(["Admin", "Editor"]);
+  const payload = normalizeExceptionPayload(formData, admin.id);
+  const supabase = await createSupabaseCookieClient();
+
+  const { error } = await supabase
+    .from("excecoes_programacao")
+    .upsert(payload, {
+      onConflict: "programacao_id,data",
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase.from("logs_auditoria").insert({
+    usuario_id: admin.id,
+    entidade_tipo: "excecoes_programacao",
+    acao: "SALVAR_EXCECAO_PROGRAMACAO",
+    resumo: `Exceção salva para ${payload.data}`,
+  });
+
+  revalidatePath("/admin/agenda-semanal");
+  revalidatePath("/agenda");
+  revalidatePath("/");
 }

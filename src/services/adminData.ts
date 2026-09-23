@@ -11,6 +11,7 @@ import type {
   AdminEventCategory,
   AdminMinistry,
   AdminNotification,
+  AdminScheduleException,
   AdminSetting,
   AdminSiteContent,
   AdminTransmission,
@@ -184,8 +185,9 @@ export async function listAdminWeeklySchedule() {
   const { data, error } = await supabase
     .from("programacao_semanal")
     .select(
-      "id,titulo,dia_semana,horario,local,descricao,publico,ativo"
+      "id,titulo,categoria,dia_semana,horario,horario_fim,local,descricao,ministerio_id,data_inicio,data_fim,publico,ativo,ordem"
     )
+    .order("ordem")
     .order("dia_semana")
     .order("horario");
 
@@ -194,6 +196,22 @@ export async function listAdminWeeklySchedule() {
   }
 
   return (data ?? []) as AdminWeeklySchedule[];
+}
+
+export async function listAdminScheduleExceptions() {
+  const supabase = await createSupabaseCookieClient();
+  const { data, error } = await supabase
+    .from("excecoes_programacao")
+    .select(
+      "id,programacao_id,data,status,titulo,horario,horario_fim,local,descricao"
+    )
+    .order("data", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as AdminScheduleException[];
 }
 
 export async function listAdminAnnouncements() {

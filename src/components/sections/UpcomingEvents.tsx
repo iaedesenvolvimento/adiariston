@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { EventCard } from "@/components/ui/EventCard";
-import { publicEvents } from "@/data/publicContent";
+import { listPublicEvents } from "@/services/publicData";
 
-export function UpcomingEvents() {
+export async function UpcomingEvents() {
+  const events = (await listPublicEvents()).slice(0, 3);
+
   return (
     <section className="bg-background py-16 lg:py-20">
       <div className="mx-auto max-w-300 px-5">
@@ -33,19 +35,21 @@ export function UpcomingEvents() {
         </div>
 
         {/* Eventos */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {publicEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              day={event.day}
-              month={event.month}
-              title={event.title}
-              time={event.time}
-              location={event.location}
-              href={`/agenda/${event.id}`}
-            />
-          ))}
-        </div>
+        {events.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {events.map((event) => (
+              <EventCard
+                key={event.id}
+                day={event.day}
+                month={event.month}
+                title={event.title}
+                time={event.time}
+                location={event.location}
+                href={event.href ?? `/agenda/${event.id}`}
+              />
+            ))}
+          </div>
+        ) : null}
 
       </div>
     </section>

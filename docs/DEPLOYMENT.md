@@ -31,6 +31,7 @@ No projeto Supabase de produção:
    - `supabase/migrations/202609220007_event_categories_seed.sql`
    - `supabase/migrations/202609220008_contributions_pix_mvp.sql`
    - `supabase/migrations/202609220009_create_transmissoes.sql`
+   - `supabase/migrations/202609220010_weekly_schedule_exceptions.sql`
 2. Crie o usuário administrativo no Supabase Auth.
 3. Insira o usuário na tabela `usuarios`.
 4. Vincule o perfil `Admin` em `usuarios_perfis`.
@@ -101,6 +102,7 @@ Validar manualmente:
 - Login administrativo redireciona corretamente para `/admin`.
 - Admin consegue ver visitantes, pedidos, eventos e configurações.
 - Eventos publicados aparecem em `/agenda`.
+- Programação semanal e exceções aparecem em `/agenda` e na Home.
 - Dados da igreja aparecem no site público.
 - Apenas métodos de contribuição ativos aparecem em `/contribua`.
 - Mural exibe somente pedidos aprovados.

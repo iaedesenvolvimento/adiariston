@@ -34,7 +34,7 @@ export default async function AgendaPage() {
                     title={event.title}
                     time={event.time}
                     location={event.location}
-                    href={`/agenda/${event.id}`}
+                    href={event.href ?? `/agenda/${event.id}`}
                   />
                 ))}
               </div>
