@@ -132,6 +132,40 @@ export async function updateWeeklyScheduleAction(
   revalidatePath("/");
 }
 
+export async function deleteWeeklyScheduleAction(
+  formData: FormData
+) {
+  const admin = await requireAdminProfile(["Admin", "Editor"]);
+  const id = getString(formData, "id");
+  const title = getString(formData, "titulo") || "Programação";
+
+  if (!id) {
+    throw new Error("Programação não informada.");
+  }
+
+  const supabase = await createSupabaseCookieClient();
+  const { error } = await supabase
+    .from("programacao_semanal")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase.from("logs_auditoria").insert({
+    usuario_id: admin.id,
+    entidade_tipo: "programacao_semanal",
+    entidade_id: id,
+    acao: "EXCLUIR_PROGRAMACAO_SEMANAL",
+    resumo: `Programação excluída: ${title}`,
+  });
+
+  revalidatePath("/admin/agenda-semanal");
+  revalidatePath("/agenda");
+  revalidatePath("/");
+}
+
 export async function upsertScheduleExceptionAction(
   formData: FormData
 ) {
@@ -154,6 +188,40 @@ export async function upsertScheduleExceptionAction(
     entidade_tipo: "excecoes_programacao",
     acao: "SALVAR_EXCECAO_PROGRAMACAO",
     resumo: `Exceção salva para ${payload.data}`,
+  });
+
+  revalidatePath("/admin/agenda-semanal");
+  revalidatePath("/agenda");
+  revalidatePath("/");
+}
+
+export async function deleteScheduleExceptionAction(
+  formData: FormData
+) {
+  const admin = await requireAdminProfile(["Admin", "Editor"]);
+  const id = getString(formData, "id");
+  const date = getString(formData, "data");
+
+  if (!id) {
+    throw new Error("Exceção não informada.");
+  }
+
+  const supabase = await createSupabaseCookieClient();
+  const { error } = await supabase
+    .from("excecoes_programacao")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await supabase.from("logs_auditoria").insert({
+    usuario_id: admin.id,
+    entidade_tipo: "excecoes_programacao",
+    entidade_id: id,
+    acao: "EXCLUIR_EXCECAO_PROGRAMACAO",
+    resumo: `Exceção excluída${date ? ` para ${date}` : ""}`,
   });
 
   revalidatePath("/admin/agenda-semanal");
