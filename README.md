@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Projeto Igreja
 
-## Getting Started
+Plataforma Next.js para site público, acolhimento de visitantes, pedidos de oração, administração interna e apoio de IA com Groq.
 
-First, run the development server:
+## Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Supabase
+- Groq API
+- Vitest
+- Vercel
+
+## Ambiente local
+
+1. Instale dependências:
+
+```bash
+npm install
+```
+
+2. Crie `.env` a partir de `.env.example` e preencha as variáveis:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-20b
+```
+
+3. Rode o servidor:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Acesse:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Verificações
 
-## Learn More
+Use a verificação completa antes de publicar:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run verify
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Ou rode individualmente:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-## Deploy on Vercel
+## Produção
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+O checklist de produção está em:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+docs/DEPLOYMENT.md
+```
+
+Após configurar as variáveis na Vercel e publicar, confira:
+
+```text
+/api/health
+```
+
+O endpoint deve retornar `status: "ok"` quando Supabase, Groq e service role estiverem configurados.
+
+## Segurança
+
+- Não commitar `.env` ou `.env.local`.
+- Não expor `SUPABASE_SERVICE_ROLE_KEY` no cliente.
+- Não expor `GROQ_API_KEY` no cliente.
+- Dados sensíveis de oração e visitantes devem permanecer restritos ao admin autorizado.

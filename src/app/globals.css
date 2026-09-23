@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* ========================================
+   DESIGN SYSTEM - KEEPER IGREJA
+======================================== */
+
+@theme {
+  /* Cores principais */
+  --color-primary-900: #101516;
+  --color-primary-700: #1f5f70;
+  --color-primary-600: #3199b3;
+  --color-primary-100: #d9f1f6;
+
+  /* Destaque */
+  --color-accent: #d4a853;
+
+  /* Superfícies */
+  --color-background: #f4f3f0;
+  --color-surface: #ffffff;
+
+  /* Textos */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+
+  /* Bordas */
+  --color-border-default: #e2e8f0;
+
+  /* Estados */
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-card: 0 4px 16px rgb(15 23 42 / 0.08);
+  --shadow-modal: 0 20px 40px rgb(15 23 42 / 0.15);
+}
+
+/* ========================================
+   ESTILOS GLOBAIS
+======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--color-primary-600);
+  color: white;
+}
