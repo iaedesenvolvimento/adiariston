@@ -120,9 +120,17 @@ export function Header() {
             </Link>
 
             <Link
-              href="/visitante"
+              href="/contribua"
               onClick={() => setIsMenuOpen(false)}
               className="bg-primary-600 px-3 py-2 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-primary-700"
+            >
+              Contribua
+            </Link>
+
+            <Link
+              href="/visitante"
+              onClick={() => setIsMenuOpen(false)}
+              className="border border-primary-600 px-3 py-2 text-sm font-black uppercase tracking-[0.14em] text-primary-700 transition hover:bg-primary-100"
             >
               Sou Visitante
             </Link>
