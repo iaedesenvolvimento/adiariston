@@ -30,6 +30,7 @@ No projeto Supabase de produção:
    - `supabase/migrations/202609220006_updated_content_modules.sql`
    - `supabase/migrations/202609220007_event_categories_seed.sql`
    - `supabase/migrations/202609220008_contributions_pix_mvp.sql`
+   - `supabase/migrations/202609220009_create_transmissoes.sql`
 2. Crie o usuário administrativo no Supabase Auth.
 3. Insira o usuário na tabela `usuarios`.
 4. Vincule o perfil `Admin` em `usuarios_perfis`.

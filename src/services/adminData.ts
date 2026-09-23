@@ -13,6 +13,7 @@ import type {
   AdminNotification,
   AdminSetting,
   AdminSiteContent,
+  AdminTransmission,
   AdminUserListItem,
   AdminVisitor,
   AdminWeeklySchedule,
@@ -285,4 +286,20 @@ export async function listAdminChurchData() {
   }
 
   return (data ?? []) as AdminChurchData[];
+}
+
+export async function listAdminTransmissions() {
+  const supabase = await createSupabaseCookieClient();
+  const { data, error } = await supabase
+    .from("transmissoes")
+    .select(
+      "id,titulo,descricao,youtube_video_id,inicio_previsto,fim_previsto,status,destacar_home,exibir_gravacao,ativo"
+    )
+    .order("inicio_previsto", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as AdminTransmission[];
 }

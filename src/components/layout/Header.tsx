@@ -17,6 +17,10 @@ const navigationLinks = [
     label: "Eventos",
   },
   {
+    href: "/ao-vivo",
+    label: "Ao Vivo",
+  },
+  {
     href: "/ministerios",
     label: "Servir",
   },

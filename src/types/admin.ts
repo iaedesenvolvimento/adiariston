@@ -10,6 +10,12 @@ export type EventStatus =
   | "PUBLICADO"
   | "ARQUIVADO";
 
+export type TransmissionStatus =
+  | "AGENDADA"
+  | "AO_VIVO"
+  | "ENCERRADA"
+  | "CANCELADA";
+
 export interface AdminVisitor {
   id: string;
   nome_completo: string;
@@ -176,4 +182,17 @@ export interface AdminChurchData {
   valor: string;
   publico: boolean;
   updated_at: string;
+}
+
+export interface AdminTransmission {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  youtube_video_id: string;
+  inicio_previsto: string;
+  fim_previsto: string | null;
+  status: TransmissionStatus;
+  destacar_home: boolean;
+  exibir_gravacao: boolean;
+  ativo: boolean;
 }

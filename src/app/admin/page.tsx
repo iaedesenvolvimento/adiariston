@@ -40,6 +40,13 @@ const adminAreas = [
     status: "Ativo",
   },
   {
+    title: "Transmissões",
+    description:
+      "Gerencie lives do YouTube, gravações e destaques da Home.",
+    href: "/admin/transmissoes",
+    status: "Ativo",
+  },
+  {
     title: "Avisos",
     description:
       "Acompanhe comunicados institucionais para o site e a comunidade.",

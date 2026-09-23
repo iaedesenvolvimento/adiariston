@@ -3,6 +3,7 @@ import type {
   AdminChurchData,
   AdminContributionMethod,
   AdminEvent,
+  AdminTransmission,
   AdminWeeklySchedule,
 } from "@/types/admin";
 
@@ -27,6 +28,17 @@ export interface PublicEventDetail extends PublicEventListItem {
   category: string;
   summary: string;
   description: string;
+}
+
+export interface PublicTransmission {
+  id: string;
+  title: string;
+  description: string;
+  youtubeVideoId: string;
+  startsAt: string;
+  endsAt: string | null;
+  status: AdminTransmission["status"];
+  showRecording: boolean;
 }
 
 const defaultChurchInfo = {
@@ -96,6 +108,37 @@ function mapPublicEvent(event: AdminEvent): PublicEventDetail {
       event.descricao ||
       "Mais detalhes serão informados pela equipe da igreja.",
   };
+}
+
+function mapPublicTransmission(
+  transmission: AdminTransmission
+): PublicTransmission {
+  return {
+    id: transmission.id,
+    title: transmission.titulo,
+    description:
+      transmission.descricao ||
+      "Acompanhe a transmissão oficial da igreja.",
+    youtubeVideoId: transmission.youtube_video_id,
+    startsAt: transmission.inicio_previsto,
+    endsAt: transmission.fim_previsto,
+    status: transmission.status,
+    showRecording: transmission.exibir_gravacao,
+  };
+}
+
+function isVisiblePublicTransmission(
+  transmission: AdminTransmission
+) {
+  if (!transmission.ativo || transmission.status === "CANCELADA") {
+    return false;
+  }
+
+  if (transmission.status === "ENCERRADA") {
+    return transmission.exibir_gravacao;
+  }
+
+  return true;
 }
 
 export async function listPublicEvents() {
@@ -229,5 +272,66 @@ export async function listPublicContributionMethods() {
         error instanceof Error ? error.name : "UnknownError",
     });
     return [];
+  }
+}
+
+export async function listPublicTransmissions() {
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("transmissoes")
+      .select(
+        "id,titulo,descricao,youtube_video_id,inicio_previsto,fim_previsto,status,destacar_home,exibir_gravacao,ativo"
+      )
+      .eq("ativo", true)
+      .neq("status", "CANCELADA")
+      .order("inicio_previsto", { ascending: false });
+
+    if (error) {
+      console.warn("[public-data] Transmissões indisponíveis.", {
+        errorCode: error.code,
+      });
+      return [];
+    }
+
+    return ((data ?? []) as AdminTransmission[])
+      .filter(isVisiblePublicTransmission)
+      .map(mapPublicTransmission);
+  } catch (error) {
+    console.warn("[public-data] Transmissões indisponíveis.", {
+      errorName:
+        error instanceof Error ? error.name : "UnknownError",
+    });
+    return [];
+  }
+}
+
+export async function getFeaturedPublicTransmission() {
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("transmissoes")
+      .select(
+        "id,titulo,descricao,youtube_video_id,inicio_previsto,fim_previsto,status,destacar_home,exibir_gravacao,ativo"
+      )
+      .eq("ativo", true)
+      .eq("destacar_home", true)
+      .neq("status", "CANCELADA")
+      .order("inicio_previsto", { ascending: false })
+      .limit(3);
+
+    if (error) {
+      return null;
+    }
+
+    const transmission = ((data ?? []) as AdminTransmission[]).find(
+      isVisiblePublicTransmission
+    );
+
+    return transmission
+      ? mapPublicTransmission(transmission)
+      : null;
+  } catch {
+    return null;
   }
 }
